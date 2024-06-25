@@ -2,9 +2,9 @@ import os
 from scapy.all import ICMP, IP, sr1, TCP, sr
 from ipaddress import ip_network
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from threading import lock
+from threading import Lock
 
-print_lock = lock()
+print_lock = Lock()
 
 def ping(host):
     response = sr1(IP(dst=str(host))/ICMP(), timeout=1, verbose=0)
@@ -31,6 +31,13 @@ def ping_sweep(network, netmask):
                     live_hosts.append(result)
 
     return live_hosts
+
+def scan_port(args):
+    ip, port = args
+    response = sr1(IP(dst=ip)/TCP(dport=port, flags="S"), timeout=1, verbose=0)
+    if response is not None and response[TCP].flags == "SA":
+        return port
+    return None
 
 def port_scan(ip, ports):
     open_ports = []
